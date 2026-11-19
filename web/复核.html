@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>门灯标注 · 批量复核</title>
+<style>
+:root{color-scheme:dark;font:15px/1.5 system-ui,"Microsoft YaHei",sans-serif;background:#11161d;color:#edf1f7;--surface:#1a222e;--line:#384455;--muted:#b7c4d3;--accent:#83ebd9}
+*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit;color:inherit}button,input,select{border:1px solid var(--line);border-radius:7px;background:#202b39;padding:6px 10px}input[type=checkbox]{accent-color:var(--accent)}button{cursor:pointer}button:hover:not(:disabled){border-color:var(--accent)}button:disabled{opacity:.42;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{position:sticky;top:0;z-index:2;background:#151d27;border-bottom:1px solid var(--line);padding:10px clamp(10px,2vw,24px);display:grid;gap:8px}.bar{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap}.heading{font-size:21px;margin:0;margin-right:auto;letter-spacing:.02em}.field{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:13px}.field input[type=number]{width:66px}.field input[type=search]{width:clamp(130px,15vw,235px)}.quiet{color:var(--muted);font-size:13px}.stats{font-variant-numeric:tabular-nums;color:var(--accent);margin-right:auto}.pagination{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.pagination input{width:64px}.primary{background:#234b48;border-color:#4d8e88}.path{margin:0;overflow-wrap:anywhere}.path summary{cursor:pointer;width:max-content}.path div{margin:4px 0}
+main{padding:12px clamp(10px,2vw,24px) 24px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:10px;align-items:start}.grid.fixed{grid-template-columns:repeat(var(--columns),minmax(0,1fr))}.card{text-align:left;min-width:0;display:grid;gap:0;padding:0;overflow:hidden;border-color:#384455;background:var(--surface)}.preview{display:block;position:relative;aspect-ratio:var(--ratio,16/9);background:#0c1016;width:100%;overflow:hidden}.preview img,.preview svg{position:absolute;inset:0;width:100%;height:100%;display:block}.preview img{object-fit:contain}.preview svg{pointer-events:none}.hide-boxes svg{display:none}.caption{display:grid;gap:3px;padding:6px 8px;min-width:0}.title-line,.tags{display:flex;align-items:center;gap:3px 6px;flex-wrap:wrap}.title-line strong{font-size:14px}.tags,.badge{font-size:12px}.badge{border:1px solid #516277;border-radius:5px;padding:0 4px;white-space:nowrap}.filename{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.status{margin-left:auto;color:#bac8da}.status.approved{color:#a9edb2}.status.rejected,.status.invalid{color:#ffb3a7}.empty{padding:35px 0;text-align:center;color:var(--muted)}
+dialog{width:min(96vw,1500px);max-width:none;max-height:96dvh;overflow:auto;border:1px solid #596a7c;border-radius:12px;background:#18212d;color:inherit;padding:12px}dialog::backdrop{background:#070a10e8}.viewer{margin:8px auto;width:min(100%,calc(73dvh * var(--aspect,1.7778)))}.viewer .preview{border-radius:7px}.dialog-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#detail-name{overflow-wrap:anywhere;min-width:0;flex:1}.dialog-note{margin:6px 0 0}
+.batch{gap:6px 8px;background:#18272d;border-left:3px solid #559c91;border-radius:4px;padding:5px 8px}.batch button{font-size:13px;padding:4px 8px}.batch-count{color:#c5eee7;font-size:13px;font-variant-numeric:tabular-nums;min-width:6em}.batch .approve{background:#286050;border-color:#5fa894;color:#f3fffc;font-weight:700}.batch-result{margin:0 0 0 6px;color:#c4dfd8;font-size:13px}.batch-result.warning{color:#ffd78d}.batch-result[hidden]{display:none}.tile{position:relative;min-width:0}.tile .card{width:100%}.tile.selected .card{border-color:var(--accent);outline:1px solid var(--accent);outline-offset:-1px}.pick{position:absolute;top:6px;left:6px;width:34px;height:34px;display:grid;place-items:center;border:1px solid #8193a6;border-radius:7px;background:#101923ec;cursor:pointer}.pick:hover,.pick:focus-within,.selected .pick{border-color:var(--accent);background:#203d3c}.pick input,#detail-pick{width:17px;height:17px;margin:0;cursor:pointer}.pick input:disabled{cursor:wait}.detail-pick[hidden]{display:none}#approval{width:min(480px,92vw);padding:20px}#approval h2{margin:0 0 8px;font-size:19px}#approval .dialog-bar{justify-content:flex-end;margin-top:16px}
+@media(max-width:680px){header{position:static}.heading{font-size:18px}.caption .filename{display:none}}
+#relabel,#approval{width:min(500px,92vw);padding:20px}#relabel h2{margin:0 0 8px;font-size:19px}#relabel .form-row{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}#relabel .form-row[hidden],#relabel-hint[hidden]{display:none}#relabel .dialog-bar{justify-content:flex-end;margin-top:16px}.side-mark{font-weight:700;paint-order:stroke;stroke:#101923;stroke-width:4px;stroke-linejoin:round}.preview-note{margin:0 0 0 6px}
+.box-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px;padding:8px;background:#111923;border:1px solid var(--line);border-radius:6px}.box-tools .field{white-space:normal}.box-tools select{max-width:min(56vw,380px)}.box-tools button{font-size:13px;padding:5px 8px}.box-hint{margin:0;color:var(--muted);font-size:12px}#viewer svg{pointer-events:auto}#viewer rect[data-box-index]{pointer-events:all;cursor:pointer}#viewer rect.box-active{fill-opacity:.22;stroke:#fff;stroke-width:4}.hide-boxes #viewer svg:has(.box-active){display:block}.hide-boxes #viewer svg :not(.box-active){visibility:hidden;pointer-events:none}.delete-confirm{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;padding:8px;background:#382626;border:1px solid #885e57;border-radius:6px}.delete-confirm[hidden],.box-tools[hidden]{display:none}.delete-confirm strong{margin-right:auto}.delete-confirm button{font-size:13px}#delete-confirm-button{background:#67362f;border-color:#a97268}
+.box-classifier{position:relative}.box-label-choices{position:absolute;top:calc(100% + 4px);left:0;z-index:2;display:grid;gap:3px;min-width:max(100%,130px);padding:4px;background:#202b39;border:1px solid #596a7c;border-radius:7px;box-shadow:0 6px 18px #0008}.box-label-choices[hidden]{display:none}.box-label-choices button{text-align:left;white-space:nowrap}.box-label-choices button[aria-pressed=true]{border-color:var(--accent)}#box-edit-hint{flex-basis:100%}
+#viewer rect.box-handle,.hide-boxes #viewer svg rect.box-handle{visibility:visible;pointer-events:all;touch-action:none;fill:#fff;stroke:#162c36;stroke-width:1.5}#viewer .box-handle[data-handle=nw],#viewer .box-handle[data-handle=se]{cursor:nwse-resize}#viewer .box-handle[data-handle=ne],#viewer .box-handle[data-handle=sw]{cursor:nesw-resize}#viewer .box-handle[data-handle=n],#viewer .box-handle[data-handle=s]{cursor:ns-resize}#viewer .box-handle[data-handle=e],#viewer .box-handle[data-handle=w]{cursor:ew-resize}#viewer.resizing{user-select:none}#viewer.drawing{cursor:crosshair;touch-action:none}#viewer rect.box-new-preview{pointer-events:none;fill-opacity:.16;stroke-width:3;stroke-dasharray:7 4;vector-effect:non-scaling-stroke}.hide-boxes #viewer svg.editor-active{display:block}.hide-boxes #viewer svg.editor-active rect.box-new-preview{visibility:visible;pointer-events:none}.box-tools button.mode-active{background:#32523d;border-color:#86bf78}#detail-reset-box[hidden]{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar"><h1 class="heading">门灯标注 · 批量复核</h1><button type="button" id="refresh">重读标注</button><button type="button" id="fullscreen" class="primary">全屏</button></div>
+  <div class="bar" aria-label="筛选和显示设置">
+    <label class="field">门 <select id="door"><option value="">全部</option><option value="door_open">开门</option><option value="door_closed">关门</option><option value="none">无门框</option></select></label>
+    <label class="field">灯 <select id="light"><option value="">全部</option><option value="light_on">灯亮</option><option value="light_off">灯灭</option><option value="light_unknown">灯未知</option><option value="none">无灯框</option></select></label>
+    <label class="field">验收 <select id="status"><option value="">全部</option><option value="pending" selected>未验收</option><option value="approved">合格</option><option value="rejected">不合格</option><option value="missing">缺标注</option><option value="invalid">标注异常</option></select></label>
+    <label class="field">编号或文件名 <input id="search" type="search" placeholder="例如 0403"></label>
+    <button type="button" id="reset">清除筛选</button>
+  </div>
+  <div class="bar">
+    <span id="stats" class="stats" role="status" aria-live="polite">正在读取…</span>
+    <label class="field">每页 <input id="size" type="number" min="1" max="150" value="50" inputmode="numeric"> 张</label>
+    <label class="field">列数 <select id="columns"><option value="0">自动</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+    <label class="field"><input type="checkbox" id="boxes" checked> 显示框</label>
+    <nav class="pagination" aria-label="页码"><button id="prev" type="button">上一页</button><label class="field">第 <input aria-label="页码" id="page" type="number" min="1" value="1"></label><span id="page-total">/ 1 页</span><button id="next" type="button">下一页</button></nav>
+  </div>
+  <div class="bar batch" role="group" aria-label="批量验收">
+    <span id="selected-count" class="batch-count" aria-live="polite">已选 0 张</span>
+    <button id="select-page" type="button" disabled>全选本页</button>
+    <button id="select-filtered" type="button" disabled>全选筛选结果</button>
+    <button id="clear-selection" type="button" disabled>清空选择</button>
+    <button id="batch-edit" class="primary" type="button" disabled>修改门灯状态</button>
+    <button id="approve" class="approve" type="button" disabled>标记为合格</button>
+    <p id="batch-result" class="batch-result" role="status" hidden></p>
+  </div>
+  <details class="path quiet"><summary>复核目录与操作</summary><div id="directory"></div><div>勾选图片左上角；按住 Shift 可在本页连续勾选。翻页保留选择，更换筛选会清空选择。</div><div>在 X-AnyLabeling 保存后，点「重读标注」同步变化，修改过的图片会取消勾选。打开大图后，用 ← / → 切图，点外侧暗区或按 Esc 关闭。</div></details>
+</header>
+<main><div id="message" class="empty">正在读取 X-AnyLabeling 标注…</div><div id="grid" class="grid"></div></main>
+<dialog id="detail" aria-labelledby="detail-name">
+  <div class="dialog-bar"><strong id="detail-name"></strong><button type="button" id="detail-prev">上一张</button><button type="button" id="detail-next">下一张</button><button type="button" id="detail-close">关闭</button></div>
+  <div class="box-tools" id="box-tools" hidden>
+    <label class="field">编辑哪个框 <select id="detail-shape" aria-label="选择标注框"></select></label>
+    <div class="box-classifier">
+      <button type="button" id="detail-label" aria-controls="box-label-choices" aria-expanded="false" disabled>选择新分类 ▾</button>
+      <div id="box-label-choices" class="box-label-choices" role="group" aria-label="新分类" hidden></div>
+    </div>
+    <button type="button" id="detail-save-label" class="primary" disabled>确认修改框分类</button>
+    <button type="button" id="detail-add-box">添加框</button>
+    <button type="button" id="detail-reset-box" hidden>撤销尺寸调整</button>
+    <button type="button" id="detail-delete" disabled>删除选中框</button>
+    <p id="box-edit-hint" class="box-hint" role="status"></p>
+  </div>
+  <div id="delete-confirm" class="delete-confirm" hidden><strong id="delete-confirm-text" role="status"></strong><button type="button" id="delete-cancel">取消</button><button type="button" id="delete-confirm-button">确认删除此框</button></div>
+  <div class="viewer" id="viewer"></div>
+  <div class="dialog-bar"><span id="detail-tags" class="tags"></span><label id="detail-choice" class="field detail-pick" hidden><input id="detail-pick" type="checkbox"> 加入选择</label><button id="detail-edit" class="primary" type="button" hidden>修改这张</button><button type="button" id="copy">复制文件名</button><span id="copy-result" class="quiet" role="status"></span></div>
+  <p id="detail-result" class="batch-result preview-note" role="status" hidden></p>
+</dialog>
+<dialog id="approval" aria-labelledby="approval-title" aria-describedby="approval-summary">
+  <form method="dialog">
+    <h2 id="approval-title">批量验收</h2>
+    <p id="approval-summary"></p>
+    <p class="quiet">会备份原标注，再写入验收状态。框和标签会保留。</p>
+    <div class="dialog-bar"><button value="cancel" autofocus>取消</button><button class="primary" value="approve">确认标记为合格</button></div>
+  </form>
+</dialog>
+<dialog id="relabel" aria-labelledby="relabel-title" aria-describedby="relabel-summary">
+  <form id="relabel-form" method="dialog">
+    <h2 id="relabel-title">修改门灯状态</h2>
+    <p id="relabel-summary"></p>
+    <div class="form-row">
+      <label class="field">改为 <select id="edit-label" required>
+        <option value="" selected disabled>选择门或灯的状态</option>
+        <optgroup label="门"><option value="door_open">开门</option><option value="door_closed">关门</option></optgroup>
+        <optgroup label="灯"><option value="light_on">灯亮</option><option value="light_off">灯灭</option><option value="light_unknown">灯未知</option></optgroup>
+      </select></label>
+    </div>
+    <div class="form-row" id="edit-scope-row" hidden>
+      <label class="field">修改灯框 <select id="edit-scope"><option value="" selected disabled>选左框、右框或全部</option><option value="left">左框</option><option value="right">右框</option><option value="all">全部灯框</option></select></label>
+    </div>
+    <p id="relabel-hint" class="quiet" hidden></p>
+    <p class="quiet">仅改已有框的分类，保留框的位置和验收状态。保存前自动备份。</p>
+    <div class="dialog-bar"><button type="button" id="edit-cancel">取消</button><button id="edit-submit" class="primary" value="save" disabled>确认修改</button></div>
+  </form>
+</dialog>
+<script>
+const element = id => document.getElementById(id);
+const labelNames = {door_open:'开门',door_closed:'关门',light_on:'灯亮',light_off:'灯灭',light_unknown:'灯未知'};
+const colors = {door_open:'#6ae6ff',door_closed:'#ff7e99',light_on:'#6affae',light_off:'#ffe070',light_unknown:'#cf9aff'};
+const statusNames = {approved:'合格',pending:'未验收',rejected:'不合格',missing:'缺标注',invalid:'标注异常'};
+const filters = ['door','light','status','search'];
+const preferenceKey = 'door-light-review-v1';
+const dialog = element('detail');
+const approval = element('approval');
+const editor = element('relabel');
+const selection = new Map();
+let rows = [], filtered = [], pageRows = [], page = 1, pageCount = 1, detailIndex = -1;
+let loaded = false, loading = false, saving = false, rangeAnchor = null;
+let editRows = [], detailRow = null, selectedBoxIndex = -1, pendingBoxDelete = null;
+let pendingBoxLabel = '';
+let pendingBoxBounds = null, pendingBoxAdd = null, addingBox = false, boxDrag = null, suppressBoxClick = false;
+let catalogVersion = '', backdropPressed = false;
+
+function restore() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(preferenceKey) || '{}');
+    for (const id of [...filters,'size','columns']) {
+      if (saved[id] !== undefined) element(id).value = saved[id];
+    }
+    if (typeof saved.boxes === 'boolean') element('boxes').checked = saved.boxes;
+    page = Math.max(1, Number(saved.page) || 1);
+  } catch {}
+}
+
+function save() {
+  const settings = {page, boxes:element('boxes').checked};
+  for (const id of [...filters,'size','columns']) settings[id] = element(id).value;
+  try { localStorage.setItem(preferenceKey, JSON.stringify(settings)); } catch {}
+}
+
+const node = (tag, className, text) => {
+  const result = document.createElement(tag);
+  if (className) result.className = className;
+  if (text !== undefined) result.textContent = text;
+  return result;
+};
+
+function labelFilter(row, kind, value) {
+  if (!value) return true;
+  return value === 'none' ? !row.labels.some(label => label.startsWith(kind+'_')) : row.labels.includes(value);
+}
+
+const canEdit = row => row?.revision && row.shapes.some(shape=>Object.hasOwn(labelNames,shape.label));
+const canSelect = row => row?.revision && (row.status==='pending' || canEdit(row));
+const selectedRows = () => filtered.filter(row=>selection.has(row.name));
+const asItems = items => items.map(({name,revision})=>({name,revision}));
+const lightLabels = new Set(['light_on','light_off','light_unknown']);
+const svgNamespace = 'http://www.w3.org/2000/svg';
+const resizeHandles = ['nw','n','ne','e','se','s','sw','w'];
+
+function lampSides(row) {
+  const lamps=row.shapes.filter(shape=>lightLabels.has(shape.label));
+  if (lamps.length!==2) return [];
+  const center=shape=>(shape.box[0]+shape.box[2])/2;
+  lamps.sort((a,b)=>center(a)-center(b));
+  return center(lamps[1])-center(lamps[0])<=1 ? [] : lamps;
+}
+
+function makePreview(row, lazy = false) {
+  const preview = node('div','preview');
+  if (row.width && row.height) preview.style.setProperty('--ratio', `${row.width}/${row.height}`);
+  const image = node('img');
+  image.alt = row.number ? `巡检图 ${row.number}` : row.name;
+  if (lazy) image.loading = 'lazy';
+  image.decoding = 'async';
+  image.src = `/image/${encodeURIComponent(row.name)}`;
+  preview.append(image);
+  if (!row.width || !row.height || (!row.shapes.length && (lazy || !row.revision))) return preview;
+  const layer = document.createElementNS(svgNamespace, 'svg');
+  layer.setAttribute('viewBox', `0 0 ${row.width} ${row.height}`);
+  layer.setAttribute('aria-hidden', 'true');
+  const shapes=[...row.shapes.entries()];
+  const area=([left,top,right,bottom])=>(right-left)*(bottom-top);
+  if (!lazy) shapes.sort((a,b)=>area(b[1].box)-area(a[1].box));
+  for (const [index,{label, box:[left,top,right,bottom]}] of shapes) {
+    const rect = document.createElementNS(svgNamespace, 'rect');
+    const color = colors[label] || '#fff';
+    const attrs={x:left,y:top,width:right-left,height:bottom-top,fill:color,'fill-opacity':'.08',stroke:color,'stroke-width':'2','vector-effect':'non-scaling-stroke'};
+    if (!lazy && row.revision) attrs['data-box-index']=index;
+    for (const [key,value] of Object.entries(attrs)) {
+      rect.setAttribute(key, value);
+    }
+    if (!lazy && index===selectedBoxIndex) rect.setAttribute('class','box-active');
+    layer.append(rect);
+  }
+  if (!lazy && row.revision) {
+    const previewRect=document.createElementNS(svgNamespace,'rect');
+    previewRect.classList.add('box-new-preview');
+    previewRect.setAttribute('pointer-events','none');
+    previewRect.style.display='none';
+    layer.append(previewRect);
+  }
+  if (!lazy) lampSides(row).forEach(({label,box:[left,top,right]},index)=>{
+    const marker=document.createElementNS(svgNamespace,'text');
+    marker.setAttribute('class','side-mark');
+    marker.setAttribute('x',Math.min(row.width-35,Math.max(8,(left+right)/2)));
+    marker.setAttribute('y',Math.min(row.height-8,Math.max(34,top-6)));
+    marker.setAttribute('fill',colors[label]);
+    marker.setAttribute('pointer-events','none');
+    marker.setAttribute('font-size',Math.max(24,row.width/42));
+    marker.textContent=index===0?'左':'右';
+    layer.append(marker);
+  });
+  if (!lazy && row.revision) {
+    const handles=document.createElementNS(svgNamespace,'g');
+    handles.classList.add('box-handles');
+    handles.style.display='none';
+    for (const direction of resizeHandles) {
+      const point=document.createElementNS(svgNamespace,'rect');
+      point.classList.add('box-handle');
+      point.dataset.handle=direction;
+      point.setAttribute('vector-effect','non-scaling-stroke');
+      handles.append(point);
+    }
+    layer.append(handles);
+  }
+  preview.append(layer);
+  return preview;
+}
+
+function addTags(container,row) {
+  for (const label of row.labels) {
+    const badge = node('span','badge',labelNames[label] || label);
+    badge.title = label;
+    badge.style.color = colors[label] || 'inherit';
+    container.append(badge);
+  }
+  if (!row.shapes.length) container.append(node('span','quiet','无框'));
+  if (row.unusable) container.append(node('span','quiet',`${row.unusable} 个框无法显示`));
+}
+
+function setSelected(row, checked) {
+  if (!canSelect(row) || saving || loading) return;
+  if (checked) selection.set(row.name,row.revision);
+  else selection.delete(row.name);
+}
+
+function updateSelection() {
+  const busy = saving || loading;
+  const eligible = pageRows.filter(canSelect);
+  const chosen=selectedRows();
+  const allOnPage = eligible.length>0 && eligible.every(row=>selection.has(row.name));
+  const count = selection.size;
+  element('selected-count').textContent=`已选 ${count.toLocaleString()} 张`;
+  element('select-page').textContent=allOnPage?'取消本页全选':'全选本页';
+  element('select-page').disabled=busy || !eligible.length;
+  element('select-filtered').disabled=busy || !filtered.some(row=>canSelect(row) && !selection.has(row.name));
+  element('clear-selection').disabled=busy || !count;
+  element('approve').disabled=busy || !chosen.some(row=>row.status==='pending');
+  element('batch-edit').disabled=busy || !chosen.some(canEdit);
+  for (const pick of element('grid').querySelectorAll('.pick input')) {
+    pick.checked=selection.has(pick.dataset.name);
+    pick.disabled=busy;
+    pick.closest('.tile').classList.toggle('selected',pick.checked);
+  }
+  const current=dialog.open && detailRow;
+  element('detail-choice').hidden=detailIndex<0 || !canSelect(current);
+  element('detail-pick').checked=!!current && selection.has(current.name);
+  element('detail-pick').disabled=busy;
+  element('detail-edit').hidden=!canEdit(current);
+  element('detail-edit').disabled=busy;
+  updateBoxControls(current,busy);
+}
+
+function updateBoxControls(row,busy=saving||loading) {
+  const available=dialog.open && row?.revision;
+  const tools=element('box-tools');
+  tools.hidden=!available;
+  if (!available) {
+    setBoxLabelChoices(false);
+    return;
+  }
+  const select=element('detail-shape');
+  select.value=selectedBoxIndex<0?'':String(selectedBoxIndex);
+  const shape=row.shapes[selectedBoxIndex];
+  const label=element('detail-label');
+  const locked=busy || !!pendingBoxDelete || !!boxDrag;
+  select.disabled=locked;
+  label.disabled=locked || (!shape && !addingBox);
+  if (label.disabled) setBoxLabelChoices(false);
+  const newName=labelNames[pendingBoxLabel];
+  label.textContent=addingBox ? newName ? `新框类别：${newName} ▾` : '选择新框类别 ▾' : newName ? `新分类：${newName} ▾` : '选择新分类 ▾';
+  for (const option of element('box-label-choices').children) {
+    const current=!addingBox && option.dataset.label===shape?.label;
+    option.disabled=label.disabled || current;
+    option.textContent=labelNames[option.dataset.label]+(current?'（当前）':'');
+    option.setAttribute('aria-pressed',String(option.dataset.label===pendingBoxLabel));
+  }
+  const relabeled=!!shape && !!newName && pendingBoxLabel!==shape.label;
+  const resized=!!shape && !!pendingBoxBounds;
+  const added=!!pendingBoxAdd;
+  const addButton=element('detail-add-box');
+  addButton.disabled=locked || resized || relabeled;
+  addButton.classList.toggle('mode-active',addingBox);
+  addButton.textContent=addingBox?'取消绘制':'添加框';
+  const hint=element('box-edit-hint');
+  const hintText=addingBox ? !newName ? '选择新框类别后，在图片上按下并拖动绘制。' : `正在绘制「${newName}」框：在图片上按下并拖动，松开后确认保存。` : added ? `新建「${newName}」框已绘制，确认后写入标注。` : !shape ? '单击选框，拖动角点或边点调整尺寸；双击框选择新分类。'
+    : `${boxName(row,selectedBoxIndex)}${relabeled?` → ${newName}`:''}。${boxDrag?'正在调整尺寸…':resized?'尺寸已调整，待确认。':relabeled?'分类待确认。':'拖动白色控制点调整尺寸，双击框修改分类。'}`;
+  if (hint.textContent!==hintText) hint.textContent=hintText;
+  const submit=element('detail-save-label');
+  submit.textContent=added?'确认添加框':resized ? relabeled?'确认修改分类和尺寸':'确认调整框' : '确认修改框分类';
+  submit.disabled=locked || (!added && !relabeled && !resized);
+  const reset=element('detail-reset-box');
+  reset.hidden=!resized && !added;
+  reset.textContent=added?'撤销新增框':'撤销尺寸调整';
+  reset.disabled=locked;
+  element('detail-delete').disabled=locked || !shape || addingBox || added;
+  element('delete-confirm-button').disabled=busy;
+}
+
+function setBoxLabelChoices(open) {
+  const trigger=element('detail-label');
+  const choices=element('box-label-choices');
+  if (open && trigger.disabled) return;
+  choices.hidden=!open;
+  trigger.setAttribute('aria-expanded',String(open));
+  if (open) (choices.querySelector('[aria-pressed=true]:enabled') || choices.querySelector('button:enabled'))?.focus({preventScroll:true});
+}
+
+function boxName(row,index,sides=lampSides(row)) {
+  const shape=row.shapes[index];
+  const position=sides.indexOf(shape);
+  return `框 ${index+1} · ${labelNames[shape.label] || shape.label}${position<0?'':position===0?'（左）':'（右）'}`;
+}
+
+function selectBox(index) {
+  const row=detailRow;
+  if (!row?.revision || saving || loading || pendingBoxDelete || boxDrag || addingBox || !Number.isInteger(index) || index<-1 || index>=row.shapes.length) return;
+  if (index!==selectedBoxIndex) {
+    const lastIndex=selectedBoxIndex;
+    if (pendingBoxBounds) drawBoxBounds(lastIndex,row.shapes[lastIndex].box);
+    pendingBoxLabel='';
+    pendingBoxBounds=null;
+    setBoxLabelChoices(false);
+  }
+  selectedBoxIndex=index;
+  for (const rect of element('viewer').querySelectorAll('[data-box-index]')) {
+    rect.classList.toggle('box-active',Number(rect.dataset.boxIndex)===index);
+  }
+  renderBoxHandles();
+  updateBoxControls(row);
+}
+
+function drawBoxBounds(index,[left,top,right,bottom]) {
+  const rect=element('viewer').querySelector(`[data-box-index="${index}"]`);
+  if (rect) {
+    for (const [key,value] of Object.entries({x:left,y:top,width:right-left,height:bottom-top})) rect.setAttribute(key,value);
+  }
+}
+
+function renderBoxHandles(bounds=boxDrag?.bounds || pendingBoxBounds || detailRow?.shapes[selectedBoxIndex]?.box) {
+  const handles=element('viewer').querySelector('.box-handles');
+  const preview=element('viewer').querySelector('.box-new-preview');
+  const draft=pendingBoxAdd || (boxDrag?.kind==='draw' ? {label:pendingBoxLabel,bounds:boxDrag.bounds} : null);
+  if (preview) {
+    if (draft) {
+      const [left,top,right,bottom]=draft.bounds;
+      preview.style.display='';
+      preview.setAttribute('x',left);
+      preview.setAttribute('y',top);
+      preview.setAttribute('width',right-left);
+      preview.setAttribute('height',bottom-top);
+      preview.setAttribute('stroke',colors[draft.label] || '#fff');
+      preview.setAttribute('fill',colors[draft.label] || '#fff');
+    } else preview.style.display='none';
+  }
+  if (!handles) return;
+  handles.ownerSVGElement.classList.toggle('editor-active',dialog.open && (addingBox || !!pendingBoxAdd || selectedBoxIndex>=0));
+  const matrix=bounds && handles.ownerSVGElement.getScreenCTM();
+  handles.style.display=matrix?.a && matrix?.d && dialog.open && !addingBox && !pendingBoxAdd && boxDrag?.kind!=='draw' && selectedBoxIndex>=0?'':'none';
+  if (handles.style.display==='none') return;
+  const [left,top,right,bottom]=bounds;
+  const width=14/Math.abs(matrix.a), height=14/Math.abs(matrix.d);
+  for (const point of handles.children) {
+    const direction=point.dataset.handle;
+    const x=direction.includes('w')?left:direction.includes('e')?right:(left+right)/2;
+    const y=direction.includes('n')?top:direction.includes('s')?bottom:(top+bottom)/2;
+    for (const [key,value] of Object.entries({x:x-width/2,y:y-height/2,width,height,rx:2/Math.abs(matrix.a)})) point.setAttribute(key,value);
+  }
+}
+
+function resizeBounds(drag,point,row) {
+  const [left,top,right,bottom]=drag.startBounds;
+  const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
+  const round=value=>Math.round(value*100)/100;
+  const dx=point.x-drag.start.x, dy=point.y-drag.start.y;
+  if (Math.abs(dx)<.005 && Math.abs(dy)<.005) return drag.startBounds;
+  const x1=clamp(left,0,row.width-1), x2=clamp(right,x1+1,row.width);
+  const y1=clamp(top,0,row.height-1), y2=clamp(bottom,y1+1,row.height);
+  return [
+    drag.direction.includes('w')?clamp(round(left+dx),0,x2-1):x1,
+    drag.direction.includes('n')?clamp(round(top+dy),0,y2-1):y1,
+    drag.direction.includes('e')?clamp(round(right+dx),x1+1,row.width):x2,
+    drag.direction.includes('s')?clamp(round(bottom+dy),y1+1,row.height):y2,
+  ];
+}
+
+function previewBoxDrag(event) {
+  const drag=boxDrag;
+  if (!drag || event.pointerId!==drag.pointerId) return;
+  const point=new DOMPoint(event.clientX,event.clientY).matrixTransform(drag.inverse);
+  if (drag.kind==='draw') {
+    point.x=Math.min(detailRow.width,Math.max(0,point.x));
+    point.y=Math.min(detailRow.height,Math.max(0,point.y));
+    drag.bounds=[Math.round(Math.min(drag.start.x,point.x)*100)/100,Math.round(Math.min(drag.start.y,point.y)*100)/100,Math.round(Math.max(drag.start.x,point.x)*100)/100,Math.round(Math.max(drag.start.y,point.y)*100)/100];
+    renderBoxHandles();
+    return;
+  }
+  drag.bounds=resizeBounds(drag,point,detailRow);
+  drawBoxBounds(selectedBoxIndex,drag.bounds);
+  renderBoxHandles(drag.bounds);
+}
+
+function finishBoxDrag(commit) {
+  if (!boxDrag) return;
+  const {pointerId,bounds,kind,label}=boxDrag;
+  boxDrag=null;
+  const viewer=element('viewer');
+  viewer.classList.remove('resizing');
+  if (kind==='draw' && commit) {
+    suppressBoxClick=true;
+    setTimeout(()=>{suppressBoxClick=false;},0);
+  }
+  if (viewer.hasPointerCapture(pointerId)) viewer.releasePointerCapture(pointerId);
+  if (kind==='draw') {
+    if (commit && bounds[2]-bounds[0]>=2 && bounds[3]-bounds[1]>=2) {
+      pendingBoxAdd={label,bounds};
+      addingBox=false;
+      viewer.classList.remove('drawing');
+    }
+    renderBoxHandles();
+    updateBoxControls(detailRow);
+    return;
+  }
+  const original=detailRow.shapes[selectedBoxIndex].box;
+  if (commit) pendingBoxBounds=bounds.some((value,index)=>value!==original[index])?bounds:null;
+  drawBoxBounds(selectedBoxIndex,pendingBoxBounds || original);
+  renderBoxHandles();
+  updateBoxControls(detailRow);
+}
+
+function showDeleteConfirmation() {
+  if (!detailRow?.revision || !detailRow.shapes[selectedBoxIndex] || saving || loading || pendingBoxDelete || boxDrag) return;
+  pendingBoxDelete={row:detailRow,index:selectedBoxIndex};
+  element('delete-confirm-text').textContent=`删除「${boxName(detailRow,selectedBoxIndex)}」？${detailRow.shapes.length===1?'这张图将没有标注框。':'其他框会保留。'}`;
+  element('delete-confirm').hidden=false;
+  updateSelection();
+  element('delete-cancel').focus();
+}
+
+function clearDeleteConfirmation() {
+  pendingBoxDelete=null;
+  element('delete-confirm').hidden=true;
+  updateSelection();
+}
+
+function showResult(text='', warning=false, detail='') {
+  for (const id of ['batch-result','detail-result']) {
+    const result=element(id);
+    result.textContent=text;
+    result.hidden=!text;
+    result.classList.toggle('warning',warning);
+    result.title=detail;
+  }
+}
+
+function createCard(row) {
+  const tile = node('div','tile');
+  const card = node('button','card');
+  card.type='button';
+  card.title=row.name;
+  const caption = node('span','caption');
+  const line = node('span','title-line');
+  line.append(node('strong','',row.number ? `#${row.number}` : '巡检图'), node('span',`status ${row.status}`,statusNames[row.status]));
+  const tags = node('span','tags');
+  addTags(tags,row);
+  caption.append(line,tags,node('span','filename',row.name));
+  card.append(makePreview(row,true),caption);
+  card.addEventListener('click',()=>openDetail(filtered.indexOf(row)));
+  tile.append(card);
+  if (canSelect(row)) {
+    const control=node('label','pick');
+    const pick=node('input');
+    pick.type='checkbox';
+    pick.dataset.name=row.name;
+    pick.setAttribute('aria-label',`选择 ${row.number ? '#'+row.number : row.name}`);
+    control.append(pick);
+    tile.append(control);
+    pick.addEventListener('click',event=>{
+      const from=pageRows.findIndex(item=>item.name===rangeAnchor);
+      const to=pageRows.indexOf(row);
+      const range=event.shiftKey && from>=0 ? pageRows.slice(Math.min(from,to),Math.max(from,to)+1) : [row];
+      for (const item of range) setSelected(item,pick.checked);
+      rangeAnchor=row.name;
+      updateSelection();
+    });
+  }
+  return tile;
+}
+
+function render({scroll=false}={}) {
+  const size = Math.max(1, Math.min(150, Math.trunc(Number(element('size').value)) || Number(element('size').defaultValue)));
+  element('size').value = size;
+  const door=element('door').value, light=element('light').value, status=element('status').value;
+  const search=element('search').value.trim().toLowerCase();
+  filtered = rows.filter(row => labelFilter(row,'door',door) && labelFilter(row,'light',light) && (!status || row.status===status) && (!search || ( /^\d{1,4}$/.test(search) ? row.number === search.padStart(4,'0') : row.name.toLowerCase().includes(search))));
+  if (selection.size) {
+    const visibleNames=new Set(filtered.map(row=>row.name));
+    for (const name of selection.keys()) if (!visibleNames.has(name)) selection.delete(name);
+  }
+  pageCount = Math.max(1,Math.ceil(filtered.length/size));
+  page = Math.max(1,Math.min(pageCount,Math.trunc(page)||1));
+  const offset=(page-1)*size;
+  element('page').value=page;
+  element('page').max=pageCount;
+  element('page-total').textContent=`/ ${pageCount} 页`;
+  element('prev').disabled=page<=1;
+  element('next').disabled=page>=pageCount;
+  const approved = filtered.filter(row=>row.status==='approved').length;
+  const pending = filtered.filter(row=>row.status==='pending').length;
+  element('stats').textContent=`筛中 ${filtered.length.toLocaleString()} / ${rows.length.toLocaleString()} 张 · 未验收 ${pending.toLocaleString()} · 合格 ${approved.toLocaleString()}`;
+  const grid=element('grid');
+  const count=Number(element('columns').value)||0;
+  grid.classList.toggle('fixed',count>0);
+  if (count) grid.style.setProperty('--columns',count);
+  const visible=filtered.slice(offset,offset+size);
+  if (visible.length!==pageRows.length || visible.some((row,index)=>row!==pageRows[index])) {
+    grid.replaceChildren(...visible.map(createCard));
+  }
+  pageRows=visible;
+  rangeAnchor=null;
+  updateSelection();
+  element('message').hidden=filtered.length>0;
+  if (loaded) element('message').textContent='没有符合筛选条件的图片。';
+  applyBoxes();
+  if (scroll) window.scrollTo(0,0);
+  save();
+}
+
+function applyBoxes() { document.body.classList.toggle('hide-boxes',!element('boxes').checked); }
+
+function catalogRow(row) {
+  return {...row,number:row.name.match(/^\d+_.+?_(\d{4})_/)?.[1] || '',labels:[...new Set(row.shapes.map(shape=>shape.label))]};
+}
+
+async function load({manual=false, preserveSelection=false, reopenBox=-1}={}) {
+  if (loading || saving) return;
+  const selectedBefore=new Map(selection);
+  loading=true;
+  updateSelection();
+  element('refresh').disabled=true;
+  element('refresh').textContent='读取中…';
+  try {
+    const url=catalogVersion ? `/api/catalog?since=${encodeURIComponent(catalogVersion)}` : '/api/catalog';
+    const response=await fetch(url,{cache:'no-store'});
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const catalog=await response.json();
+    if (catalog.delta && !catalog.rows.length && !catalog.removed.length) {
+      catalogVersion=catalog.version;
+      if (manual) showResult('标注没有变化。');
+      if (!manual && !preserveSelection) selection.clear();
+      return;
+    }
+    const priorDetail=dialog.open ? detailRow : null;
+    if (catalog.delta) {
+      const byName=new Map(rows.map(row=>[row.name,row]));
+      for (const name of catalog.removed) byName.delete(name);
+      let added=false;
+      for (const row of catalog.rows) {
+        if (!byName.has(row.name)) added=true;
+        byName.set(row.name,catalogRow(row));
+      }
+      rows=[...byName.values()];
+      if (added) {
+        rows.sort((a,b)=>a.name.toLowerCase()<b.name.toLowerCase()?-1:a.name.toLowerCase()>b.name.toLowerCase()?1:0);
+      }
+    } else rows=catalog.rows.map(catalogRow);
+    catalogVersion=catalog.version || '';
+    if (!manual && !preserveSelection) selection.clear();
+    else {
+      const retained=new Set(selection.keys());
+      selection.clear();
+      for (const row of rows) {
+        if (retained.has(row.name) && canSelect(row) && (preserveSelection || selectedBefore.get(row.name)===row.revision)) {
+          selection.set(row.name,row.revision);
+        }
+      }
+    }
+    element('directory').textContent=catalog.directory;
+    loaded=true;
+    render();
+    if (priorDetail) {
+      const row=rows.find(item=>item.name===priorDetail.name);
+      if (row) openDetail(filtered.indexOf(row),row,row.revision===priorDetail.revision?selectedBoxIndex:reopenBox);
+      else dialog.close();
+    }
+    if (manual) {
+      const changes=catalog.delta ? catalog.rows.length+catalog.removed.length : null;
+      showResult(changes===null ? '已重新读取标注。' : `已同步 ${changes.toLocaleString()} 张标注变化。`);
+    }
+  } catch (error) {
+    if (loaded) showResult(`重读失败：${error.message}，仍显示上次读取的标注。`,true);
+    else element('stats').textContent=`读取失败：${error.message}`;
+    if (!loaded) element('message').textContent='未能读取目录，请确认本机服务正在运行，再点击「重读标注」。';
+  } finally {
+    loading=false;
+    updateSelection();
+    element('refresh').disabled=false;
+    element('refresh').textContent='重读标注';
+  }
+}
+
+function openDetail(index,row=filtered[index],boxIndex=-1) {
+  if (!row || boxDrag) return;
+  detailIndex=index;
+  detailRow=row;
+  selectedBoxIndex=row.shapes[boxIndex]?boxIndex:-1;
+  pendingBoxDelete=null;
+  element('delete-confirm').hidden=true;
+  pendingBoxLabel='';
+  pendingBoxAdd=null;
+  addingBox=false;
+  pendingBoxBounds=null;
+  setBoxLabelChoices(false);
+  element('detail-name').textContent=`${row.name} · ${statusNames[row.status]}`;
+  const viewer=element('viewer');
+  viewer.classList.remove('drawing','resizing');
+  viewer.style.setProperty('--aspect', row.width && row.height ? row.width/row.height : 16/9);
+  viewer.replaceChildren(makePreview(row));
+  const tags=element('detail-tags');
+  tags.replaceChildren();
+  const sides=lampSides(row);
+  const placeholder=node('option','','选择一个标注框');
+  placeholder.value='';
+  element('detail-shape').replaceChildren(placeholder,...row.shapes.map((_,i)=>{
+    const option=node('option','',boxName(row,i,sides));
+    option.value=i;
+    return option;
+  }));
+  if (sides.length===2) {
+    const doorTags=row.labels.filter(label=>!lightLabels.has(label));
+    for (const label of doorTags) tags.append(node('span','badge',labelNames[label] || label));
+    sides.forEach((shape,i)=>{
+      const badge=node('span','badge',`${i===0?'左框':'右框'}：${labelNames[shape.label]}`);
+      badge.style.color=colors[shape.label];
+      tags.append(badge);
+    });
+  } else addTags(tags,row);
+  element('copy-result').textContent='';
+  element('detail-prev').disabled=index<=0;
+  element('detail-next').disabled=index<0 || index===filtered.length-1;
+  if (!dialog.open) dialog.showModal();
+  renderBoxHandles();
+  updateSelection();
+}
+
+function changePage(value) {
+  page=value;
+  render({scroll:true});
+}
+
+function changeFilters() {
+  selection.clear();
+  showResult();
+  changePage(1);
+}
+
+function refreshEditOptions() {
+  const label=element('edit-label').value;
+  const isLight=lightLabels.has(label);
+  const hint=element('relabel-hint');
+  element('edit-scope-row').hidden=!isLight;
+  element('edit-scope').required=isLight;
+  hint.hidden=!label;
+  hint.textContent=isLight
+    ? '左框、右框按图片里的位置判断，只处理能分清左右的两灯框图片。选「全部灯框」可改一张图上的所有灯框。'
+    : '只处理恰好有一个门框的图片；无门框或有多个门框的图片会跳过。';
+  element('edit-submit').disabled=!label || (isLight && !element('edit-scope').value);
+}
+
+function editStates(items, detail=false) {
+  if (!items.length || saving || loading) return;
+  editRows=items;
+  element('relabel-form').reset();
+  element('relabel-summary').textContent=detail
+    ? `只修改当前图片${items[0].number ? ` #${items[0].number}` : ''}。`
+    : `对所选 ${items.length.toLocaleString()} 张图片应用同一分类。没有对应框的图片会跳过。`;
+  refreshEditOptions();
+  editor.returnValue='';
+  editor.showModal();
+}
+
+async function saveChanges(items, change=null) {
+  if (saving || loading) return;
+  const boxAction=change?.action;
+  saving=true;
+  showResult('正在保存…');
+  element('refresh').disabled=true;
+  updateSelection();
+  let result;
+  try {
+    const response=await fetch(boxAction?'/api/box-edit':change?'/api/relabel':'/api/approve',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({items,...change}),
+    });
+    result=await response.json();
+    if (!response.ok) throw new Error(result.error || '保存请求失败');
+  } catch (error) {
+    result=null;
+    showResult(`未能确认保存结果：${error.message}。可先重读标注。`,true);
+  } finally {
+    saving=false;
+    element('refresh').disabled=false;
+    updateSelection();
+  }
+  if (!result) return;
+  const skipped = result.skipped;
+  const reasons = [...new Set(skipped.map(item=>item.reason))].join('、');
+  const done=change ? `已修改 ${result.updated.length.toLocaleString()} 张、${result.boxes.toLocaleString()} 个框` : `已标记 ${result.approved.length.toLocaleString()} 张为合格`;
+  const unchanged=result.unchanged ? `，${result.unchanged.toLocaleString()} 张已是所选状态` : '';
+  const text = boxAction
+    ? skipped.length ? `未保存：${reasons}。` : result.unchanged ? '选中框没有变化。' : boxAction==='add' ? `已添加框 ${change.index+1}。` : `已${boxAction==='delete'?'删除':boxAction==='resize'?'调整':'修改'}框 ${change.index+1}。`
+    : `${done}${unchanged}${skipped.length ? `，跳过 ${skipped.length.toLocaleString()} 张（${reasons}）` : ''}。`;
+  showResult(text,!!skipped.length,result.backup ? `原标注已保存至数据集目录中的 ${result.backup}` : '');
+  await load({preserveSelection:!!change,reopenBox:boxAction && boxAction!=='delete' && result.boxes===1?change.index:-1});
+}
+
+restore();
+for (const id of filters) element(id).addEventListener(id==='search'?'input':'change',changeFilters);
+element('reset').addEventListener('click',()=>{for (const id of filters) element(id).value='';changeFilters();});
+element('size').addEventListener('change',()=>changePage(1));
+element('columns').addEventListener('change',()=>render());
+element('boxes').addEventListener('change',()=>{applyBoxes();save();});
+element('page').addEventListener('change',event=>changePage(Number(event.target.value)));
+for (const id of ['size','page']) element(id).addEventListener('keydown',event=>{
+  if (event.key==='Enter') changePage(id==='size'?1:Number(event.target.value));
+});
+element('prev').addEventListener('click',()=>changePage(page-1));
+element('next').addEventListener('click',()=>changePage(page+1));
+element('refresh').addEventListener('click',()=>{showResult();load({manual:true});});
+element('select-page').addEventListener('click',()=>{
+  const eligible=pageRows.filter(canSelect);
+  const check=eligible.some(row=>!selection.has(row.name));
+  for (const row of eligible) setSelected(row,check);
+  updateSelection();
+});
+element('select-filtered').addEventListener('click',()=>{
+  for (const row of filtered) setSelected(row,true);
+  updateSelection();
+});
+element('clear-selection').addEventListener('click',()=>{selection.clear();rangeAnchor=null;updateSelection();});
+element('detail-pick').addEventListener('change',event=>{
+  if (detailIndex>=0) setSelected(detailRow,event.target.checked);
+  updateSelection();
+});
+element('batch-edit').addEventListener('click',()=>editStates(selectedRows()));
+element('detail-edit').addEventListener('click',()=>{
+  if (!pendingBoxDelete) editStates([detailRow],true);
+});
+element('edit-label').addEventListener('change',refreshEditOptions);
+element('edit-scope').addEventListener('change',refreshEditOptions);
+element('edit-cancel').addEventListener('click',()=>editor.close());
+editor.addEventListener('close',()=>{
+  if (editor.returnValue!=='save' || !editRows.length || saving) return;
+  const label=element('edit-label').value;
+  const scope=lightLabels.has(label) ? element('edit-scope').value : 'all';
+  saveChanges(asItems(editRows),{label,scope});
+});
+element('approve').addEventListener('click',()=>{
+  const pending=selectedRows().filter(row=>row.status==='pending').length;
+  const current=pageRows.filter(row=>row.status==='pending' && selection.has(row.name)).length;
+  element('approval-summary').textContent=`将 ${pending.toLocaleString()} 张未验收图片标为「合格」${current<pending ? `，含其他页已选的 ${(pending-current).toLocaleString()} 张` : ''}。`;
+  approval.returnValue='';
+  approval.showModal();
+});
+approval.addEventListener('close',()=>{
+  const pending=selectedRows().filter(row=>row.status==='pending');
+  if (approval.returnValue==='approve' && pending.length && !saving) saveChanges(asItems(pending));
+});
+element('fullscreen').addEventListener('click',async()=>{
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  } catch { element('fullscreen').textContent='请使用浏览器全屏键'; }
+});
+document.addEventListener('fullscreenchange',()=>{element('fullscreen').textContent=document.fullscreenElement?'退出全屏':'全屏';});
+element('detail-prev').addEventListener('click',()=>openDetail(detailIndex-1));
+element('detail-next').addEventListener('click',()=>{if(detailIndex>=0) openDetail(detailIndex+1);});
+element('detail-close').addEventListener('click',()=>dialog.close());
+element('detail-shape').addEventListener('change',event=>selectBox(event.target.value===''?-1:Number(event.target.value)));
+const boxLabelChoices=element('box-label-choices');
+for (const [label,text] of Object.entries(labelNames)) {
+  const option=node('button','',text);
+  option.type='button';
+  option.dataset.label=label;
+  boxLabelChoices.append(option);
+}
+element('detail-label').addEventListener('click',()=>setBoxLabelChoices(boxLabelChoices.hidden));
+boxLabelChoices.addEventListener('click',event=>{
+  const option=event.target.closest('button[data-label]');
+  if (!option || option.disabled || boxLabelChoices.hidden || element('detail-label').disabled) return;
+  pendingBoxLabel=option.dataset.label;
+  setBoxLabelChoices(false);
+  updateBoxControls(detailRow);
+  if (addingBox) boxViewer.focus({preventScroll:true});
+  else element('detail-save-label').focus({preventScroll:true});
+});
+const boxViewer=element('viewer');
+boxViewer.tabIndex=-1;
+new ResizeObserver(()=>renderBoxHandles()).observe(boxViewer);
+boxViewer.addEventListener('pointerdown',event=>{
+  if (addingBox && pendingBoxLabel && event.button===0 && !boxDrag && !pendingBoxDelete && !saving && !loading) {
+    const svg=boxViewer.querySelector('svg');
+    const matrix=svg?.getScreenCTM();
+    if (!matrix?.a || !matrix.d) return;
+    event.preventDefault();
+    const inverse=matrix.inverse();
+    const start=new DOMPoint(event.clientX,event.clientY).matrixTransform(inverse);
+    start.x=Math.min(detailRow.width,Math.max(0,start.x));
+    start.y=Math.min(detailRow.height,Math.max(0,start.y));
+    boxViewer.setPointerCapture(event.pointerId);
+    boxDrag={kind:'draw',pointerId:event.pointerId,inverse,start,label:pendingBoxLabel,bounds:[start.x,start.y,start.x,start.y]};
+    boxViewer.classList.add('resizing');
+    updateBoxControls(detailRow);
+    return;
+  }
+  const handle=event.target.closest('[data-handle]');
+  const shape=detailRow?.shapes[selectedBoxIndex];
+  if (!handle || !shape || event.button!==0 || boxDrag || pendingBoxDelete || saving || loading) return;
+  const matrix=handle.ownerSVGElement.getScreenCTM();
+  if (!matrix?.a || !matrix.d) return;
+  event.preventDefault();
+  const inverse=matrix.inverse();
+  const start=new DOMPoint(event.clientX,event.clientY).matrixTransform(inverse);
+  const startBounds=pendingBoxBounds || shape.box;
+  boxViewer.setPointerCapture(event.pointerId);
+  boxDrag={pointerId:event.pointerId,direction:handle.dataset.handle,inverse,start,startBounds,bounds:startBounds};
+  boxViewer.classList.add('resizing');
+  updateBoxControls(detailRow);
+});
+boxViewer.addEventListener('pointermove',previewBoxDrag);
+boxViewer.addEventListener('pointerup',event=>{
+  if (event.pointerId!==boxDrag?.pointerId) return;
+  previewBoxDrag(event);
+  finishBoxDrag(true);
+});
+for (const eventName of ['pointercancel','lostpointercapture']) {
+  boxViewer.addEventListener(eventName,event=>{
+    if (event.pointerId===boxDrag?.pointerId) finishBoxDrag(false);
+  });
+}
+boxViewer.addEventListener('click',event=>{
+  if (suppressBoxClick) {
+    event.preventDefault();
+    event.stopPropagation();
+    suppressBoxClick=false;
+    return;
+  }
+  if (addingBox) return;
+  const target=event.target.closest('[data-box-index]');
+  if (target) selectBox(Number(target.dataset.boxIndex));
+});
+boxViewer.addEventListener('dblclick',event=>{
+  const target=event.target.closest('[data-box-index]');
+  if (!target || boxDrag || pendingBoxDelete || saving || loading) return;
+  selectBox(Number(target.dataset.boxIndex));
+  setBoxLabelChoices(true);
+});
+element('detail-save-label').addEventListener('click',()=>{
+  if (element('detail-save-label').disabled || !detailRow) return;
+  const change=pendingBoxAdd
+    ? {action:'add',index:detailRow.shapes.length,label:pendingBoxAdd.label,bounds:pendingBoxAdd.bounds}
+    : pendingBoxBounds ? {action:'resize',bounds:pendingBoxBounds,...(pendingBoxLabel?{label:pendingBoxLabel}:{})} : {action:'relabel',label:pendingBoxLabel};
+  if (!pendingBoxAdd) change.index=selectedBoxIndex;
+  saveChanges(asItems([detailRow]),change);
+});
+element('detail-add-box').addEventListener('click',()=>{
+  if (!detailRow?.revision || saving || loading || boxDrag || pendingBoxDelete) return;
+  if (addingBox || pendingBoxAdd) {
+    addingBox=false;
+    pendingBoxAdd=null;
+    pendingBoxLabel='';
+    boxViewer.classList.remove('drawing');
+    renderBoxHandles();
+    updateBoxControls(detailRow);
+    return;
+  }
+  addingBox=true;
+  pendingBoxLabel='';
+  pendingBoxAdd=null;
+  pendingBoxBounds=null;
+  selectedBoxIndex=-1;
+  boxViewer.classList.add('drawing');
+  for (const rect of boxViewer.querySelectorAll('[data-box-index]')) rect.classList.remove('box-active');
+  renderBoxHandles();
+  updateBoxControls(detailRow);
+  setBoxLabelChoices(true);
+});
+element('detail-reset-box').addEventListener('click',()=>{
+  if (pendingBoxAdd) {
+    pendingBoxAdd=null;
+    pendingBoxLabel='';
+    addingBox=false;
+    boxViewer.classList.remove('drawing');
+    renderBoxHandles();
+    updateBoxControls(detailRow);
+    return;
+  }
+  if (!pendingBoxBounds || boxDrag || saving || loading) return;
+  pendingBoxBounds=null;
+  drawBoxBounds(selectedBoxIndex,detailRow.shapes[selectedBoxIndex].box);
+  renderBoxHandles();
+  updateBoxControls(detailRow);
+});
+element('detail-delete').addEventListener('click',showDeleteConfirmation);
+element('delete-cancel').addEventListener('click',()=>{
+  clearDeleteConfirmation();
+  element('detail-delete').focus();
+});
+element('delete-confirm-button').addEventListener('click',()=>{
+  if (!pendingBoxDelete || saving || loading) return;
+  const {row,index}=pendingBoxDelete;
+  clearDeleteConfirmation();
+  saveChanges(asItems([row]),{action:'delete',index});
+});
+element('copy').addEventListener('click',async()=>{
+  try {
+    await navigator.clipboard.writeText(detailRow.name);
+    element('copy-result').textContent='已复制，可在软件中搜索';
+  } catch { element('copy-result').textContent='复制失败，可以手动选择上方文件名'; }
+});
+dialog.addEventListener('keydown',event=>{
+  if (boxDrag) {
+    if (event.key==='Escape') {
+      event.preventDefault();
+      finishBoxDrag(false);
+    }
+    return;
+  }
+  if (event.key==='Escape' && (addingBox || pendingBoxAdd)) {
+    event.preventDefault();
+    addingBox=false;
+    pendingBoxAdd=null;
+    pendingBoxLabel='';
+    boxViewer.classList.remove('drawing');
+    setBoxLabelChoices(false);
+    renderBoxHandles();
+    updateBoxControls(detailRow);
+    return;
+  }
+  if (event.key==='Delete' && !event.repeat) {
+    event.preventDefault();
+    showDeleteConfirmation();
+  }
+  if (detailIndex<0 || saving || loading || pendingBoxDelete || event.target.matches('select,input') || event.target.closest('.box-classifier')) return;
+  if (event.key==='ArrowLeft') openDetail(detailIndex-1);
+  if (event.key==='ArrowRight') openDetail(detailIndex+1);
+});
+dialog.addEventListener('cancel',event=>{
+  if (!boxLabelChoices.hidden) {
+    event.preventDefault();
+    setBoxLabelChoices(false);
+    element('detail-label').focus();
+    return;
+  }
+  if (!pendingBoxDelete) return;
+  event.preventDefault();
+  clearDeleteConfirmation();
+  element('detail-delete').focus();
+});
+function hitBackdrop(event) {
+  if (event.target!==dialog) return false;
+  const {left,top,right,bottom}=dialog.getBoundingClientRect();
+  return event.clientX<left || event.clientX>right || event.clientY<top || event.clientY>bottom;
+}
+dialog.addEventListener('pointerdown',event=>{backdropPressed=hitBackdrop(event);});
+dialog.addEventListener('click',event=>{
+  if (backdropPressed && hitBackdrop(event)) dialog.close();
+  else if (!event.target.closest('.box-classifier') && event.target!==element('detail-add-box')) setBoxLabelChoices(false);
+  backdropPressed=false;
+});
+dialog.addEventListener('close',()=>{finishBoxDrag(false);boxViewer.classList.remove('drawing','resizing');addingBox=false;pendingBoxAdd=null;pendingBoxLabel='';backdropPressed=false;pendingBoxDelete=null;setBoxLabelChoices(false);});
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+/data/
+/.venv/
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+*.pt
+*.onnx
+*.engine
+.env
+.env.*
+/local.*
+/dist/
+/runs/
